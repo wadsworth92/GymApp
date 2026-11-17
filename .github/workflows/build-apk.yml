@@ -32,6 +32,9 @@ jobs:
           mv_if gradle-wrapper.jar          gradle/wrapper/gradle-wrapper.jar
           mv_if gradle-wrapper.properties   gradle/wrapper/gradle-wrapper.properties
           find . -path ./.git -prune -o -type f -print
+          # Align Kotlin stdlib versions (fixes duplicate kotlin-stdlib-jdk7/jdk8 classes)
+          printf '\ndependencies {\n    implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.8.22"))\n}\n' >> app/build.gradle.kts
+          tail -5 app/build.gradle.kts
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
