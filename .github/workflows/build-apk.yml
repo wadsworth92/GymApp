@@ -1,0 +1,54 @@
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      # The project was uploaded flat, so put each file into its Android folder before building
+      - name: Arrange project folders
+        shell: bash
+        run: |
+          set -e
+          mv_if() { if [ -f "$1" ]; then mkdir -p "$(dirname "$2")"; mv "$1" "$2"; fi; }
+          M=app/src/main
+          mv_if "build.gradle (1).kts"      app/build.gradle.kts
+          mv_if AndroidManifest.xml         $M/AndroidManifest.xml
+          mv_if MainActivity.java           $M/java/com/gymlibrary/app/MainActivity.java
+          mv_if index.html                  $M/assets/index.html
+          mv_if colors.xml                  $M/res/values/colors.xml
+          mv_if strings.xml                 $M/res/values/strings.xml
+          mv_if themes.xml                  $M/res/values/themes.xml
+          mv_if "colors (2).xml"            $M/res/values-night/colors.xml
+          mv_if ic_launcher.xml             $M/res/mipmap-anydpi-v26/ic_launcher.xml
+          mv_if ic_launcher_round.xml       $M/res/mipmap-anydpi-v26/ic_launcher_round.xml
+          mv_if ic_launcher_foreground.xml  $M/res/drawable/ic_launcher_foreground.xml
+          mv_if gradle-wrapper.jar          gradle/wrapper/gradle-wrapper.jar
+          mv_if gradle-wrapper.properties   gradle/wrapper/gradle-wrapper.properties
+          find . -path ./.git -prune -o -type f -print
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build debug APK
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GymLibrary-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
